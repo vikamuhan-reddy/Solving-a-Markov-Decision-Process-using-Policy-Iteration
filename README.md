@@ -126,19 +126,87 @@ If the improved policy is the same as the old policy, the policy is considered s
 
 ```python
 
+
 # -------------------------------------------------
 # Policy Evaluation
 # -------------------------------------------------
 
+def policy_evaluation(policy, env, gamma, theta, max_iter=1000):
+    """
+    Evaluate a given policy by iteratively updating the state-value function.
+    """
+    V = np.zeros(n_states)
 
+    for _ in range(max_iter):
+        delta = 0.0
+
+        for state in range(n_states):
+            v_state = 0.0
+
+            for action, action_prob in enumerate(policy[state]):
+                for probability, next_state, reward, terminated in env.P[state][action]:
+                    v_state += action_prob * probability * (
+                        reward + gamma * V[next_state] * (not terminated)
+                    )
+
+            delta = max(delta, abs(v_state - V[state]))
+            V[state] = v_state
+
+        if delta < theta:
+            break
+    return V
 
 # -------------------------------------------------
 # Policy Improvement
 # -------------------------------------------------
+def policy_improvement(env, V, gamma):
+    """
+    Improve the policy greedily with respect to the current value function.
+    """
+    policy = np.zeros((n_states, n_actions))
+
+    for state in range(n_states):
+        action_values = one_step_lookahead(env, state, V, gamma)
+        best_action = np.argmax(action_values)
+        policy[state, best_action] = 1.0
+
+    return policy
 
 #-------------------------------------------------
 # Policy Iteration
 # -------------------------------------------------
+def policy_iteration(env, gamma, theta, max_iterations=1000):
+    """
+    Run policy iteration until the policy converges.
+    """
+    policy = np.ones((n_states, n_actions)) / n_actions
+    V = np.zeros(n_states)
+    print("-------------------------------------------------")
+    print("Before Policy Iteration:")
+    print("-------------------------------------------------")
+    print_value_function(V)
+
+    for iteration in range(max_iterations):
+        V = policy_evaluation(policy, env, gamma, theta)
+        new_policy = policy_improvement(env, V, gamma)
+
+        if np.allclose(policy, new_policy):
+            print(f"Policy iterations: {iteration + 1}")
+            print("-------------------------------------------------")
+            print("After Policy Iteration :")
+            print("-------------------------------------------------")
+            print_value_function(V)
+            print_policy(policy)
+            return new_policy, V
+
+        policy = new_policy
+        print(f"Policy iterations: {iteration +1}")
+        print_value_function(V)
+        print_policy(policy)
+        print()
+
+    print_value_function(V)
+    return policy, V
 
 
 
@@ -147,17 +215,10 @@ If the improved policy is the same as the old policy, the policy is considered s
 
 ## Output
 
-```text
+<img width="272" height="655" alt="image" src="https://github.com/user-attachments/assets/3d853336-1b8d-4043-b39b-9b2da146c537" />
+<img width="269" height="511" alt="image" src="https://github.com/user-attachments/assets/80eb488a-1ca9-4145-a092-1beec2532d15" />
 
-Total policy iterations: 
-
-Optimal State-Value Function:
-
-
-Optimal Policy:
-
-```
-
+<img width="288" height="268" alt="image" src="https://github.com/user-attachments/assets/b67694df-4427-4544-9d4a-e4baada759d9" />
 
 
 ---
@@ -165,7 +226,7 @@ Optimal Policy:
 ## Result
 
 ```text
-
+The Policy Iteration algorithm was successfully implemented using the Gymnasium FrozenLake-v1 environment. The algorithm repeatedly performed policy evaluation and policy improvement until the policy became stable. The resulting value function represents the expected discounted return from each state, while the final policy provides the optimal action for each state under the given environment dynamics.
 
 
 ```
@@ -173,7 +234,7 @@ Optimal Policy:
 
 ## Inference
 ```text
-
+Policy Iteration successfully solves the finite Markov Decision Process by alternating between evaluating the current policy and improving it greedily. The policy becomes stable after a finite number of iterations, indicating that no further improvement is possible. The experiment demonstrates how Dynamic Programming can be used to obtain an optimal policy when the transition probabilities and rewards of the environment are known.
 
 ```
 ---
